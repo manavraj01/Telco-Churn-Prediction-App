@@ -1,9 +1,8 @@
 import streamlit as st
 import pandas as pd
 import pickle
-import numpy as np
 
-# Load your trained model
+# Load model
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
 
@@ -12,13 +11,13 @@ st.markdown("Fill in the customer details to predict churn probability.")
 
 # Inputs
 senior = st.selectbox("Senior Citizen", ["No", "Yes"])
-tenure = st.number_input("Tenure (months)", min_value=0, max_value=100, value=12)
-monthly_charges = st.number_input("Monthly Charges", min_value=0.0, value=70.0)
-total_charges = st.number_input("Total Charges", min_value=0.0, value=tenure*monthly_charges)
+tenure = st.number_input("Tenure (months)", 0, 100, 12)
+monthly_charges = st.number_input("Monthly Charges", 0.0, 1000.0, 70.0)
+total_charges = st.number_input("Total Charges", 0.0, 10000.0, tenure*monthly_charges)
 
 contract = st.selectbox("Contract Type", ["Month-to-Month", "One year", "Two year"])
 dependents = st.selectbox("Has Dependents?", ["No", "Yes"])
-device_protection = st.selectbox("Device Protection", ["No", "Yes"])
+device_protection = st.selectbox("Device Protection", ["No", "Yes", "No internet service"])
 internet_service = st.selectbox("Internet Service", ["DSL", "Fiber optic", "No"])
 multiple_lines = st.selectbox("Multiple Lines", ["No", "Yes", "No phone service"])
 online_backup = st.selectbox("Online Backup", ["No", "Yes", "No internet service"])
@@ -32,8 +31,8 @@ streaming_tv = st.selectbox("Streaming TV", ["No", "Yes", "No internet service"]
 tech_support = st.selectbox("Tech Support", ["No", "Yes", "No internet service"])
 gender = st.selectbox("Gender", ["Female", "Male"])
 
-# Mapping inputs to model columns
-features = {
+# Mapping inputs to model features
+feature_dict = {
     "SeniorCitizen": 1 if senior=="Yes" else 0,
     "tenure": tenure,
     "MonthlyCharges": monthly_charges,
@@ -66,12 +65,14 @@ features = {
     "gender_Male": 1 if gender=="Male" else 0
 }
 
+# Ensure correct column order
+model_features = model.get_booster().feature_names  # xgboost trained feature names
+X_new = pd.DataFrame([feature_dict], columns=model_features)  # force same column order
+
 # Prediction
 if st.button("Predict Churn"):
-    X_new = pd.DataFrame([features])
     prediction = model.predict(X_new)[0]
     probability = model.predict_proba(X_new)[0][1]
     
     st.subheader(f"Prediction: {'Churn' if prediction==1 else 'No Churn'}")
     st.subheader(f"Probability of Churn: {probability:.2f}")
-
