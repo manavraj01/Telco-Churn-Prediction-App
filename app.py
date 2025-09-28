@@ -5,6 +5,7 @@ import numpy as np
 
 # Load your trained model
 with open("model.pkl", "rb") as f:
+    
     model = pickle.load(f)
 
 st.title("Telco Churn Prediction")
